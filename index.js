@@ -29,6 +29,11 @@ async function run() {
       const result = await petCollection.find().toArray();
       res.send(result)
     })
+
+    app.get("/featured", async(req, res)=>{
+      const result = await petCollection.find().limit(6).toArray();
+      res.send(result)
+    })
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
