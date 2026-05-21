@@ -24,21 +24,30 @@ async function run() {
     const db = client.db("petnest");
     const petCollection = db.collection("pets")
 
-    app.get("/pets", async(req, res)=>{
-      const {search} = req.query;
-      let result;
-      if(search){
-         result = await petCollection.find({$or:[
-          {name: {$regex: search, $options:"i"}}, 
-          {species: {$regex: search, $options:"i"}}, 
-          {brand: {$regex: search, $options:"i"}}
-        ]}).toArray();
-      }
-      else{
-        result = await petCollection.find().toArray();
-      }
-      res.send(result)
-    })
+    app.get("/pets", async (req, res) => {
+    const { search, species, fee } = req.query;
+
+    const query = {};
+
+    if (search) {
+        query.$or = [
+            { name: { $regex: search, $options: "i" } },
+            { species: { $regex: search, $options: "i" } },
+            { breed: { $regex: search, $options: "i" } },
+        ];
+    }
+
+    if (species) {
+        query.species = { $regex: species, $options: "i" };
+    }
+
+    if (fee) {
+        query.fee = { $lte: parseInt(fee) };
+    }
+
+    const result = await petCollection.find(query).toArray();
+    res.send(result);
+});
 
     app.get("/featured", async(req, res)=>{
       const result = await petCollection.find().limit(6).toArray();
