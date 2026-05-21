@@ -51,7 +51,13 @@ async function run() {
       res.send(result);
     })
 
-    app.patch("pets/:id", async(req,res))
+    app.patch("/pets/:petId", async(req,res)=>{
+      const {petId} = req.params;
+      const pet = req.body;
+      const result = await petCollection.updateOne({_id: new ObjectId(petId)}, {$set: pet});
+      res.send(result);
+    })
+
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
