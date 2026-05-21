@@ -1,11 +1,15 @@
 const express = require('express')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
+const cors = require("cors")
 const dotenv = require("dotenv")
 dotenv.config();
 
 const port = process.env.PORT
 const uri = process.env.MONGO_URI
+
+app.use(cors());
+app.use(express.json());
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -39,8 +43,15 @@ async function run() {
       const {petId} = req.params;
       const result = await petCollection.findOne({_id: new ObjectId(petId)});
       res.send(result);
-
     })
+
+    app.post("/pets", async(req, res)=>{
+      const pet = req.body;
+      const result = await petCollection.insertOne(pet);
+      res.send(result);
+    })
+
+    app.patch("pets/:id", async(req,res))
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
