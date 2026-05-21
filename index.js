@@ -58,6 +58,12 @@ async function run() {
       res.send(result);
     })
 
+    app.delete("/pets/:petId", async(req, res)=>{
+      const {petId} = req.params;
+      const result = await petCollection.deleteOne({_id: new ObjectId(petId)})
+      res.send(result);
+    })
+
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
