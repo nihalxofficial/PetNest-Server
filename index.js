@@ -1,5 +1,5 @@
 const express = require('express')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const dotenv = require("dotenv")
 dotenv.config();
@@ -33,6 +33,13 @@ async function run() {
     app.get("/featured", async(req, res)=>{
       const result = await petCollection.find().limit(6).toArray();
       res.send(result)
+    })
+
+    app.get("/pets/:petId", async(req, res)=> {
+      const {petId} = req.params;
+      const result = await petCollection.findOne({_id: new ObjectId(petId)});
+      res.send(result);
+
     })
   } finally {
     // Ensures that the client will close when you finish/error
