@@ -199,6 +199,15 @@ async function run() {
     });
 
 
+    app.get("/requests/:userId", async (req, res) => {
+      const { userId } = req.params;
+      console.log(userId);
+      const result = await adoptionCollection.find({userId: userId}).toArray();
+      console.log(result);
+      res.send(result);
+    });
+
+
 
 
 
