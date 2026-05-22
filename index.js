@@ -47,12 +47,16 @@ async function run() {
         query.fee = { $lte: parseInt(fee) };
       }
 
-      const sortQuery = 
-          sort === "price_low"  ? { fee: 1 } :
-          sort === "price_high" ? { fee: -1 } :
-          sort === "name_asc"   ? { name: 1 } :
-          sort === "name_desc"  ? { name: -1 } : {};
-
+      const sortQuery =
+        sort === "price_low"
+          ? { fee: 1 }
+          : sort === "price_high"
+            ? { fee: -1 }
+            : sort === "name_asc"
+              ? { name: 1 }
+              : sort === "name_desc"
+                ? { name: -1 }
+                : {};
 
       const result = await petCollection.find(query).sort(sortQuery).toArray();
       res.send(result);
@@ -65,7 +69,19 @@ async function run() {
 
     app.get("/pets/:petId", async (req, res) => {
       const { petId } = req.params;
+      if (!ObjectId.isValid(petId)) {
+        return res.status(400).send({ error: "Invalid petId" });
+      }
       const result = await petCollection.findOne({ _id: new ObjectId(petId) });
+      res.send(result);
+    });
+
+    app.get("/listings/:userId", async (req, res) => {
+      const { userId } = req.params;
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).send({ error: "Invalid userid" });
+      }
+      const result = await petCollection.find({ ownerID: userId }).toArray();
       res.send(result);
     });
 
@@ -93,25 +109,101 @@ async function run() {
       res.send(result);
     });
 
-
-    app.get("/users/:userId", async(req, res)=>{
-      const {userId} = req.params;
-      const result = await userCollection.findOne({_id: new ObjectId(userId)})
+    app.get("/users/:userId", async (req, res) => {
+      const { userId } = req.params;
+      const result = await userCollection.findOne({
+        _id: new ObjectId(userId),
+      });
       res.send(result);
-    })
+    });
 
-    app.get("/adoptions", async(req,res)=>{
+    // app.get("/users", async (req, res) => {
+    //   const { email } = req.query;
+    //   const result = await userCollection.findOne({ email: email });
+    //   res.send(result);
+    // });
+
+    app.get("/adoptions", async (req, res) => {
       const result = await adoptionCollection.find().toArray();
       res.send(result);
-    })
+    });
 
-    app.post("/adoptions/:petId", async(req,res)=> {
-      const {petId} = req.params;
-      const adoption = req.body
-      await petCollection.updateOne({_id:new ObjectId(petId)}, {$set: {status: "adopting"}});
+    app.get("/adoptions/:petId", async (req, res) => {
+      const { petId } = req.params;
+      const result = await adoptionCollection.find({ petId: petId }).toArray();
+      res.send(result);
+    });
+
+    app.post("/adoptions/:petId", async (req, res) => {
+      const { petId } = req.params;
+      const adoption = req.body;
       const result = await adoptionCollection.insertOne(adoption);
-      res.send(result)
-    })
+      res.send(result);
+    });
+
+    // APPROVE - needs both petId and adoptionId
+    app.patch("/adoptions/approve/:adoptionId", async (req, res) => {
+      const { adoptionId } = req.params;
+
+      // 1. Find the adoption request first
+      const adoption = await adoptionCollection.findOne({
+        _id: new ObjectId(adoptionId),
+      });
+
+      if (!adoption) {
+        return res.status(404).send({ message: "Adoption request not found" });
+      }
+
+      const petId = adoption.petId;
+
+      // 2. Check if pet is still available
+      const pet = await petCollection.findOne({ _id: new ObjectId(petId) });
+      if (pet.status === "adopted") {
+        return res.status(400).send({ message: "Pet is already adopted" });
+      }
+
+      // 3. Approve this specific request
+      await adoptionCollection.updateOne(
+        { _id: new ObjectId(adoptionId) },
+        { $set: { status: "approved" } },
+      );
+
+      // 4. Reject ALL other pending requests for this pet
+      await adoptionCollection.updateMany(
+        {
+          petId: petId,
+          _id: { $ne: new ObjectId(adoptionId) },
+          status: "pending",
+        },
+        { $set: { status: "rejected" } },
+      );
+      // 5. Mark pet as adopted
+      const result = await petCollection.updateOne(
+        { _id: new ObjectId(petId) },
+        { $set: { status: "adopted" } },
+      );
+
+      res.send({ message: "Adoption approved successfully", result });
+    });
+
+    // REJECT - only reject that specific request, don't touch pet status
+    app.patch("/adoptions/reject/:adoptionId", async (req, res) => {
+      const { adoptionId } = req.params;
+
+      const result = await adoptionCollection.updateOne(
+        { _id: new ObjectId(adoptionId) },
+        { $set: { status: "rejected" } },
+      );
+
+      res.send({ message: "Adoption rejected", result });
+    });
+
+
+
+
+
+
+
 
   } finally {
   }
