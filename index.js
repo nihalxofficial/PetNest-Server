@@ -107,13 +107,13 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/pets", async (req, res) => {
+    app.post("/pets", verifyToken, async (req, res) => {
       const pet = req.body;
       const result = await petCollection.insertOne(pet);
       res.send(result);
     });
 
-    app.patch("/pets/:petId", async (req, res) => {
+    app.patch("/pets/:petId", verifyToken, async (req, res) => {
       const { petId } = req.params;
       const pet = req.body;
       const result = await petCollection.updateOne(
@@ -123,7 +123,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/pets/:petId", async (req, res) => {
+    app.delete("/pets/:petId", verifyToken, async (req, res) => {
       const { petId } = req.params;
       const result = await petCollection.deleteOne({
         _id: new ObjectId(petId),
@@ -156,7 +156,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/adoptions/:petId", async (req, res) => {
+    app.post("/adoptions/:petId", verifyToken, async (req, res) => {
       const { petId } = req.params;
       const adoption = req.body;
 
@@ -182,7 +182,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/adoptions/approve/:adoptionId", async (req, res) => {
+    app.patch("/adoptions/approve/:adoptionId", verifyToken, async (req, res) => {
       const { adoptionId } = req.params;
 
       const adoption = await adoptionCollection.findOne({
@@ -222,7 +222,7 @@ async function run() {
       res.send({ message: "Adoption approved successfully", result });
     });
 
-    app.patch("/adoptions/reject/:adoptionId", async (req, res) => {
+    app.patch("/adoptions/reject/:adoptionId", verifyToken, async (req, res) => {
       const { adoptionId } = req.params;
 
       const result = await adoptionCollection.updateOne(
@@ -233,7 +233,7 @@ async function run() {
       res.send({ message: "Adoption rejected", result });
     });
 
-    app.delete("/adoptions/:id", async (req, res) => {
+    app.delete("/adoptions/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await adoptionCollection.deleteOne({
         _id: new ObjectId(id),
