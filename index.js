@@ -138,6 +138,25 @@ async function run() {
     app.post("/adoptions/:petId", async (req, res) => {
       const { petId } = req.params;
       const adoption = req.body;
+
+      const pet = await petCollection.findOne({ _id: new ObjectId(petId) });
+
+      if (!pet) {
+        return res.status(404).send({ message: "Pet not found." });
+      }
+
+      if (pet.ownerEmail === adoption.userEmail) {
+        return res
+          .status(403)
+          .send({ message: "You cannot adopt your own pet." });
+      }
+
+      if (pet.status === "adopted") {
+        return res
+          .status(400)
+          .send({ message: "This pet has already been adopted." });
+      }
+
       const result = await adoptionCollection.insertOne(adoption);
       res.send(result);
     });
