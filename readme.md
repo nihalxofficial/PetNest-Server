@@ -9,7 +9,7 @@
 
 ### *REST API backend for the PetNest Pet Adoption Platform*
 
-Handles all data operations, JWT-based authentication, and protected routes for the PetNest client application.
+Handles all data operations, JWT-based authentication and protected routes for the PetNest client application.
 
 [🌐 Live Client](https://petnest-olive.vercel.app/) · [🖥️ Live Server](https://petnest-server-sepia.vercel.app/) · [📁 Client Repo](https://github.com/nihalxofficial/PetNest-Client)
 
@@ -19,7 +19,7 @@ Handles all data operations, JWT-based authentication, and protected routes for 
 
 ## 📌 Purpose
 
-This is the backend REST API for PetNest — a full-stack pet adoption platform. It exposes endpoints for managing pets and adoption requests, issues JWT tokens stored in HTTPOnly cookies, and protects private routes via a verification middleware.
+This is the backend REST API for PetNest — a full-stack pet adoption platform. It exposes endpoints for managing pets and adoption requests, issues JWT tokens stored in HTTPOnly cookies and protects private routes via a verification middleware.
 
 ---
 
