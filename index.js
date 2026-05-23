@@ -254,7 +254,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.json({message: "Successfully connected to server!"})
 });
 
 app.listen(port, () => {
