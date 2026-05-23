@@ -40,7 +40,8 @@ async function run() {
       }
 
       if (species) {
-        query.species = { $regex: species, $options: "i" };
+        const speciesList = species.split(",").map((s) => s.trim());
+        query.species = { $in: speciesList.map((s) => new RegExp(s, "i")) };
       }
 
       if (fee) {
@@ -198,22 +199,21 @@ async function run() {
       res.send({ message: "Adoption rejected", result });
     });
 
-
-    app.get("/requests/:userId", async (req, res) => {
-      const { userId } = req.params;
-      console.log(userId);
-      const result = await adoptionCollection.find({userId: userId}).toArray();
-      console.log(result);
+    app.delete("/adoptions/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await adoptionCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
       res.send(result);
     });
 
-
-
-
-
-
-
-
+    app.get("/requests/:userId", async (req, res) => {
+      const { userId } = req.params;
+      const result = await adoptionCollection
+        .find({ userId: userId })
+        .toArray();
+      res.send(result);
+    });
   } finally {
   }
 }
