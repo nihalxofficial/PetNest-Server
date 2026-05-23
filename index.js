@@ -2,6 +2,7 @@ const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const cors = require("cors");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -18,6 +19,26 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+const verifyToken = async (req, res, next) => {
+  const { authorization } = req.headers;
+  const token = authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const JWKS = createRemoteJWKSet(
+      new URL(process.env.CLIENT_URL + "/api/auth/jwks"),
+    );
+    const { payload } = await jwtVerify(token, JWKS);
+    req.user = payload;
+    // console.log(payload);
+    next();
+  } catch (error) {
+    console.error("Token validation failed:", error);
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+};
 
 async function run() {
   try {
@@ -68,7 +89,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/pets/:petId", async (req, res) => {
+    app.get("/pets/:petId", verifyToken, async (req, res) => {
       const { petId } = req.params;
       if (!ObjectId.isValid(petId)) {
         return res.status(400).send({ error: "Invalid petId" });
@@ -77,7 +98,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/listings/:userId", async (req, res) => {
+    app.get("/listings/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
       if (!ObjectId.isValid(userId)) {
         return res.status(400).send({ error: "Invalid userid" });
@@ -110,7 +131,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users/:userId", async (req, res) => {
+    app.get("/users/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
       const result = await userCollection.findOne({
         _id: new ObjectId(userId),
@@ -129,7 +150,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/adoptions/:petId", async (req, res) => {
+    app.get("/adoptions/:petId", verifyToken, async (req, res) => {
       const { petId } = req.params;
       const result = await adoptionCollection.find({ petId: petId }).toArray();
       res.send(result);
@@ -161,11 +182,9 @@ async function run() {
       res.send(result);
     });
 
-    // APPROVE - needs both petId and adoptionId
     app.patch("/adoptions/approve/:adoptionId", async (req, res) => {
       const { adoptionId } = req.params;
 
-      // 1. Find the adoption request first
       const adoption = await adoptionCollection.findOne({
         _id: new ObjectId(adoptionId),
       });
@@ -176,19 +195,16 @@ async function run() {
 
       const petId = adoption.petId;
 
-      // 2. Check if pet is still available
       const pet = await petCollection.findOne({ _id: new ObjectId(petId) });
       if (pet.status === "adopted") {
         return res.status(400).send({ message: "Pet is already adopted" });
       }
 
-      // 3. Approve this specific request
       await adoptionCollection.updateOne(
         { _id: new ObjectId(adoptionId) },
         { $set: { status: "approved" } },
       );
 
-      // 4. Reject ALL other pending requests for this pet
       await adoptionCollection.updateMany(
         {
           petId: petId,
@@ -197,7 +213,7 @@ async function run() {
         },
         { $set: { status: "rejected" } },
       );
-      // 5. Mark pet as adopted
+
       const result = await petCollection.updateOne(
         { _id: new ObjectId(petId) },
         { $set: { status: "adopted" } },
@@ -206,7 +222,6 @@ async function run() {
       res.send({ message: "Adoption approved successfully", result });
     });
 
-    // REJECT - only reject that specific request, don't touch pet status
     app.patch("/adoptions/reject/:adoptionId", async (req, res) => {
       const { adoptionId } = req.params;
 
@@ -226,7 +241,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/requests/:userId", async (req, res) => {
+    app.get("/requests/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
       const result = await adoptionCollection
         .find({ userId: userId })
